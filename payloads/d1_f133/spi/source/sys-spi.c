@@ -43,7 +43,7 @@ enum {
 	SPI_TXD	= 0x200,
 	SPI_RXD	= 0x300,
 };
-
+#if 0
 static void sys_spi_init(void)
 {
 	virtual_addr_t addr;
@@ -130,7 +130,230 @@ static void sys_spi_init(void)
 	val |= (1 << 31) | (1 << 15);
 	write32(addr + SPI_FCR, val);
 }
+#endif
+static void sys_spi_init(void)
+{
+	virtual_addr_t addr;
+	u32_t val;
 
+	/* Config GPIOD10, GPIOD11, GPIOD12 and GPIOD13 */
+	/* PD10 - CS,  PD11 - CLK, PD12 - MOSI, PD13 - MISO */
+	/* 0x02000000 - GPIO base addr */
+	/* 0x0090     - PD_CFG0 */
+	/* 0x0094     - PD_CFG1 */
+	/* 0x0098     - PD_CFG2 */
+	/* 0x00a0     - PD_DAT */
+	/* 0x00a4     - PD_DRV0 */
+	/* 0x00a8     - PD_DRV1 */
+	/* 0x00ac     - PD_DRV2 */
+	/* 0x00b4     - PD_PULL0 */
+	/* 0x00b8     - PD_PULL1 */
+
+	/* 0x0090     - PD_CFG0 */
+	/* +-------------------------------------------------------------------------------------------------------------+ */
+	/* | 31 30 29 28 | 27 26 25 24 | 23 22 21 20 | 19 18 17 16 | 15 14 13 12 | 11 10  9  8 | 7  6  5  4 | 3  2  1  0 | */
+	/* +-------------------------------------------------------------------------------------------------------------+ */
+	/* |    PD7      |     PD6     |     PD5     |     PD4     |     PD3     |     PD2     |    PD1     |    PD0     | */
+	/* +-------------------------------------------------------------------------------------------------------------+ */
+	/*                                                                                                        |        */
+	/*                                                                                                        +- 0000 Input      */
+	/*                                                                                                        +- 0001 Output     */
+	/*                                                                                                        +- 0010 LCD0-D2    */
+	/*                                                                                                        +- 0011 LVDS0-V0P  */
+	/*                                                                                                        +- 0100 DSI-D0P    */
+	/*                                                                                                        +- 0101 TWI0-SCK   */
+	/*                                                                                                        +- 0110 Reserved   */
+	/*                                                                                                        +- 0111 Reserved   */
+	/*                                                                                                        +- 1000 Reserved   */
+	/*                                                                                                        +- 1001 Reserved   */
+	/*                                                                                                        +- 1110 PD-EINT0   */
+	/*                                                                                                        +- 1111 IO Disable */
+
+	/* 0x0094 - PD_CFG1                                                                                                                 */
+	/* +-------------------------------------------------------------------------------------------------------------+                  */
+	/* | 31 30 29 28 | 27 26 25 24 | 23 22 21 20 | 19 18 17 16 | 15 14 13 12 | 11 10  9  8 | 7  6  5  4 | 3  2  1  0 |                  */
+	/* +-------------------------------------------------------------------------------------------------------------+                  */
+	/* |    PD15     |     PD14    |     PD13    |     PD12    |     PD11    |     PD10    |    PD9     |    PD8     |                  */
+	/* +-------------------------------------------------------------------------------------------------------------+                  */
+	/*                                                                               |                        |                         */
+	/*                                                                               |                        +- 0000 Input             */
+	/*                                                                               |                        +- 0001 Output            */
+	/*                                                                               |                        +- 0010 LCD0-D12          */
+	/*                                                                               |                        +- 0011 LVDS0-V3P         */
+	/*                                                                               |                        +- 0100 DSI-D3P           */
+	/*                                                                               |                        +- 0101 UART4-RX          */
+	/*                                                                               |                        +- 0110..1001  Reserved   */
+	/*                                                                               |                        +- 1110 PD-EINT8          */
+	/*                                                                               |                        +- 1111 IO Disable        */
+	/*                                                                               |                                                  */
+	/*                                                                               +- 0000 Input                                      */
+	/*                                                                               +- 0001 Output                                     */
+	/*                                                                               +- 0010 LCD0-D14                                   */
+	/*                                                                               +- 0011 LVDS1-V0P                                  */
+	/*                                                                               +- 0100 SPI1-CS/DBI-CSX                            */
+	/*                                                                               +- 0101 UART3-TX                                   */
+	/*                                                                               +- 0110..1001 Reserved                             */
+	/*                                                                               +- 1110 PD-EINT10                                  */
+	/*                                                                               +- 1111 IO Disable                                 */
+
+	addr = 0x02000000 + 0x0094;
+	val = read32(addr);
+//	val &= ~(0xf << ((2 & 0x7) << 2));
+//	val |= ((0x2 & 0xf) << ((2 & 0x7) << 2));
+	/*               PD13PD12PD11PD10         */
+	val &= 0b11111111000000000000000011111111;
+	val |= 0b00000000010001000100010000000000;
+	write32(addr, val);
+
+//	val = read32(addr);
+//	val &= ~(0xf << ((3 & 0x7) << 2));
+//	val |= ((0x2 & 0xf) << ((3 & 0x7) << 2));
+//	write32(addr, val);
+
+//	val = read32(addr);
+//	val &= ~(0xf << ((4 & 0x7) << 2));
+//	val |= ((0x2 & 0xf) << ((4 & 0x7) << 2));
+//	write32(addr, val);
+
+//	val = read32(addr);
+//	val &= ~(0xf << ((5 & 0x7) << 2));
+//	val |= ((0x2 & 0xf) << ((5 & 0x7) << 2));
+//	write32(addr, val);
+
+        /* 0x04026000 - SPI_DBI base address */
+	/* 0x0004     - SPI_GCR */
+//	addr = 0x04026000 + SPI_CGR;
+//	val = read32(addr);
+//	val |= 0x7;
+//	write32(addr, val);
+
+	/* 0x0008     - SPI_TCR */
+//	addr = 0x04026000 + SPI_TCR;
+//	val = read32(addr);
+
+	/* 0x0010     - SPI_IER */
+//	addr = 0x04026000 + SPI_IER;
+//	val = read32(addr);
+
+	/* 0x0014     - SPI_ISR */
+//	addr = 0x04026000 + SPI_ISR;
+//	val = read32(addr);
+
+        /* 0x0018     - SPI_FCR */
+//	addr = 0x04026000 + SPI_FCR;
+//	val = read32(addr);
+
+        /* 0x001c     - SPI_FSR */
+//	addr = 0x04026000 + SPI_FSR;
+//	val = read32(addr);
+
+        /* 0x0020     - SPI_WCR */
+//	addr = 0x04026000 + SPI_WCR;
+//	val = read32(addr);
+
+        /* 0x0028     - SPI_SAMP_DL */
+//	addr = 0x04026000 + 0x0028;
+//	val = read32(addr);
+
+        /* 0x0030     - SPI_MBC */
+//	addr = 0x04026000 + SPI_MBC;
+//	val = read32(addr);
+
+        /* 0x0034     - SPI_MTC */
+//	addr = 0x04026000 + SPI_MTC;
+//	val = read32(addr);
+
+        /* 0x0038     - SPI_BCC */
+//	addr = 0x04026000 + SPI_BCC;
+//	val = read32(addr);
+
+        /* 0x0040     - SPI_BATC */
+//	addr = 0x04026000 + 0x0040;
+//	val = read32(addr);
+
+        /* 0x0044     - SPI_BA_CCR */
+//	addr = 0x04026000 + 0x0044;
+//	val = read32(addr);
+
+        /* 0x0048     - SPI_TBR (TX data) */
+//	addr = 0x04026000 + 0x0048;
+//	val = read32(addr);
+
+        /* 0x004c     - SPI_RBR (RX data) */
+//	addr = 0x04026000 + 0x004c;
+//	val = read32(addr);
+
+        /* 0x0088     - SPI_NDMA_MODE_CTL */
+//	addr = 0x04026000 + 0x0088;
+//	val = read32(addr);
+
+        /* 0x0200     - SPI_TXD */
+//	addr = 0x04026000 + SPI_TXD;
+//	val = read32(addr);
+
+        /* 0x0300     - SPI_RXD */
+//	addr = 0x04026000 + SPI_RXD;
+//	val = read32(addr);
+
+        /* 0x02001000 - CCU base address */
+	/* 0x096c - SPI bus gating reset register */
+	addr = 0x02001000 + 0x096c;
+	val = read32(addr);
+	
+	/* Deassert spi1 reset, open SPI1 bus gate */
+	val |= (1 << 17) + (1 << 1);
+	write32(addr, val);
+
+        /* 0x0944 - SPI1 clock regirster */
+	/* Open the SPI1 gate */
+	addr = 0x02001000 + 0x0944;
+	val = read32(addr);
+	val |= (1 << 31);
+	write32(addr, val);
+
+	/* Select pll-periph0 for SPI1 clk */
+	addr = 0x02001000 + 0x0944;
+	val = read32(addr);
+	val &= ~(0x3 << 24);
+	val |= (1 << 24);
+	write32(addr, val);
+
+	/* Set SPI1 clock pre divide ratio, divided by 1 */
+	addr = 0x02001000 + 0x0944;
+	val = read32(addr);
+	val &= ~(0x3 << 8);
+	val |= 0x0 << 8;
+	write32(addr, val);
+
+	/* Set SPI1 clock divide ratio, divided by 6 */
+	addr = 0x02001000 + 0x0944;
+	val = read32(addr);
+	val &= ~(0xf << 0);
+	val |= (6 - 1) << 0;
+	write32(addr, val);
+
+        /* 0x04026000 - SPI_DBI base address */
+	/* Set SPI1 clock rate control register, divided by 2 */
+	addr = 0x04026000;
+	write32(addr + SPI_CCR, 0x1000);
+
+	/* Enable SPI1 and do a soft reset */
+	addr = 0x04026000;
+	val = read32(addr + SPI_GCR);
+	val |= (1 << 31) | (1 << 7) | (1 << 1) | (1 << 0);
+	write32(addr + SPI_GCR, val);
+	while(read32(addr + SPI_GCR) & (1 << 31));
+
+	val = read32(addr + SPI_TCR);
+	val &= ~(0x3 << 0);
+	val |= (1 << 6) | (1 << 2);
+	write32(addr + SPI_TCR, val);
+
+	val = read32(addr + SPI_FCR);
+	val |= (1 << 31) | (1 << 15);
+	write32(addr + SPI_FCR, val);
+}
+#if 0
 static void sys_spi_select(void)
 {
 	virtual_addr_t addr = 0x04025000;
@@ -141,7 +364,18 @@ static void sys_spi_select(void)
 	val |= ((0 & 0x3) << 4) | (0x0 << 7);
 	write32(addr + SPI_TCR, val);
 }
+#endif
+static void sys_spi_select(void)
+{
+	virtual_addr_t addr = 0x04026000;
+	u32_t val;
 
+	val = read32(addr + SPI_TCR);
+	val &= ~((0x3 << 4) | (0x1 << 7));
+	val |= ((0 & 0x3) << 4) | (0x0 << 7);
+	write32(addr + SPI_TCR, val);
+}
+#if 0
 static void sys_spi_deselect(void)
 {
 	virtual_addr_t addr = 0x04025000;
@@ -152,7 +386,18 @@ static void sys_spi_deselect(void)
 	val |= ((0 & 0x3) << 4) | (0x1 << 7);
 	write32(addr + SPI_TCR, val);
 }
+#endif
+static void sys_spi_deselect(void)
+{
+	virtual_addr_t addr = 0x04026000;
+	u32_t val;
 
+	val = read32(addr + SPI_TCR);
+	val &= ~((0x3 << 4) | (0x1 << 7));
+	val |= ((0 & 0x3) << 4) | (0x1 << 7);
+	write32(addr + SPI_TCR, val);
+}
+#if 0
 static inline void sys_spi_write_txbuf(u8_t * buf, int len)
 {
 	virtual_addr_t addr = 0x04025000;
@@ -171,7 +416,26 @@ static inline void sys_spi_write_txbuf(u8_t * buf, int len)
 			write8(addr + SPI_TXD, 0xff);
 	}
 }
+#endif
+static inline void sys_spi_write_txbuf(u8_t* buf, int len)
+{
+	virtual_addr_t addr = 0x04026000;
+	int i;
 
+	write32(addr + SPI_MTC, len & 0xffffff);
+	write32(addr + SPI_BCC, len & 0xffffff);
+	if(buf)
+	{
+		for(i = 0; i < len; i++)
+			write8(addr + SPI_TXD, *buf++);
+	}
+	else
+	{
+		for(i = 0; i < len; i++)
+			write8(addr + SPI_TXD, 0xff);
+	}
+}
+#if 0
 static void sys_spi_transfer(void * txbuf, void * rxbuf, u32_t len)
 {
 	virtual_addr_t addr = 0x04025000;
@@ -198,23 +462,51 @@ static void sys_spi_transfer(void * txbuf, void * rxbuf, u32_t len)
 		len -= n;
 	}
 }
+#endif
+static void sys_spi_transfer(void* txbuf, void* rxbuf, u32_t len)
+{
+	virtual_addr_t addr = 0x04026000;
+	u8_t* tx = txbuf;
+	u8_t* rx = rxbuf;
+	u8_t val;
+	int n, i;
+
+	while(len > 0)
+	{
+		n = (len <= 64) ? len : 64;
+		write32(addr + SPI_MBC, n);
+		sys_spi_write_txbuf(tx, n);
+		write32(addr + SPI_TCR, read32(addr + SPI_TCR) | (1 << 31));
+		while((read32(addr + SPI_FSR) & 0xff) < n);
+		for(i = 0; i < n; i++)
+		{
+			val = read8(addr + SPI_RXD);
+			if(rx)
+				*rx++ = val;
+		}
+		if(tx)
+			tx += n;
+		len -= n;
+	}
+}
 
 enum {
-	SPI_CMD_END				= 0x00,
-	SPI_CMD_INIT			= 0x01,
-	SPI_CMD_SELECT			= 0x02,
-	SPI_CMD_DESELECT		= 0x03,
-	SPI_CMD_FAST			= 0x04,
-	SPI_CMD_TXBUF			= 0x05,
-	SPI_CMD_RXBUF			= 0x06,
-	SPI_CMD_SPINOR_WAIT		= 0x07,
+	SPI_CMD_END		= 0x00,
+	SPI_CMD_INIT		= 0x01,
+	SPI_CMD_SELECT		= 0x02,
+	SPI_CMD_DESELECT	= 0x03,
+	SPI_CMD_FAST		= 0x04,
+	SPI_CMD_TXBUF		= 0x05,
+	SPI_CMD_RXBUF		= 0x06,
+	SPI_CMD_SPINOR_WAIT	= 0x07,
 	SPI_CMD_SPINAND_WAIT	= 0x08,
 };
 
-void sys_spi_run(void * cbuf)
+void sys_spi_run(void* cbuf)
 {
 	uint8_t tx[8], rx[8];
-	u8_t c, * p = cbuf;
+	u8_t c;
+	u8_t* p = cbuf;
 	u32_t addr, len;
 
 	while(1)
@@ -235,29 +527,29 @@ void sys_spi_run(void * cbuf)
 		else if(c == SPI_CMD_FAST)
 		{
 			len  = p[0];
-			sys_spi_transfer((void *)&p[1], NULL, len);
+			sys_spi_transfer((void*)&p[1], NULL, len);
 			p += (len + 1);
 		}
 		else if(c == SPI_CMD_TXBUF)
 		{
 			addr = (p[0] << 0) | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
 			len  = (p[4] << 0) | (p[5] << 8) | (p[6] << 16) | (p[7] << 24);
-			sys_spi_transfer((void *)((unsigned long)addr), NULL, len);
+			sys_spi_transfer((void*)((unsigned long)addr), NULL, len);
 			p += 8;
 		}
 		else if(c == SPI_CMD_RXBUF)
 		{
 			addr = (p[0] << 0) | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
 			len  = (p[4] << 0) | (p[5] << 8) | (p[6] << 16) | (p[7] << 24);
-			sys_spi_transfer(NULL, (void *)((unsigned long)addr), len);
+			sys_spi_transfer(NULL, (void*)((unsigned long)addr), len);
 			p += 8;
 		}
 		else if(c == SPI_CMD_SPINOR_WAIT)
 		{
 			tx[0] = 0x05;
 			do {
-				sys_spi_transfer((void *)&tx[0], NULL, 1);
-				sys_spi_transfer(NULL, (void *)&rx[0], 1);
+				sys_spi_transfer((void*)&tx[0], NULL, 1);
+				sys_spi_transfer(NULL, (void*)&rx[0], 1);
 			} while((rx[0] & 0x1) == 0x1);
 		}
 		else if(c == SPI_CMD_SPINAND_WAIT)
@@ -265,8 +557,8 @@ void sys_spi_run(void * cbuf)
 			tx[0] = 0x0f;
 			tx[1] = 0xc0;
 			do {
-				sys_spi_transfer((void *)&tx[0], NULL, 2);
-				sys_spi_transfer(NULL, (void *)&rx[0], 1);
+				sys_spi_transfer((void*)&tx[0], NULL, 2);
+				sys_spi_transfer(NULL, (void*)&rx[0], 1);
 			} while((rx[0] & 0x1) == 0x1);
 		}
 		else
