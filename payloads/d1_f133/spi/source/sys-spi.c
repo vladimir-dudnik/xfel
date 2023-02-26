@@ -44,7 +44,7 @@ enum {
 	SPI_RXD	= 0x300,
 };
 
-#define ORIGINAL_CODE 1
+//#define ORIGINAL_CODE 1
 #if ORIGINAL_CODE
 static void sys_spi_init(void)
 {
@@ -297,19 +297,22 @@ static void sys_spi_init(void)
 //	addr = 0x04026000 + SPI_RXD;
 //	val = read32(addr);
 
-        /* 0x02001000 - CCU base address */
+    /* 0x02001000 - CCU base address */
 	/* 0x096c - SPI bus gating reset register */
 	addr = 0x02001000 + 0x096c;
 	val = read32(addr);
 	
 	/* Deassert spi1 reset, open SPI1 bus gate */
+	// bit 17 - SPI1_RST, 1 - deasseert
+	// bit 1 - SPI1_GATING, 1 - pass clock to SPI1
 	val |= (1 << 17) + (1 << 1);
 	write32(addr, val);
 
-        /* 0x0944 - SPI1 clock regirster */
+    /* 0x0944 - SPI1 clock regirster */
 	/* Open the SPI1 gate */
 	addr = 0x02001000 + 0x0944;
 	val = read32(addr);
+	// bit 31 - SCLK_GATING, 1 - clock is ON
 	val |= (1 << 31);
 	write32(addr, val);
 
@@ -317,6 +320,7 @@ static void sys_spi_init(void)
 	addr = 0x02001000 + 0x0944;
 	val = read32(addr);
 	val &= ~(0x3 << 24);
+	// 26..24 - CLK_SRC_SEL, 001 - PLL_PERI(1x)
 	val |= (1 << 24);
 	write32(addr, val);
 
@@ -324,6 +328,7 @@ static void sys_spi_init(void)
 	addr = 0x02001000 + 0x0944;
 	val = read32(addr);
 	val &= ~(0x3 << 8);
+	// bit 9..8 - FACTOR_N, 00 - 1
 	val |= 0x0 << 8;
 	write32(addr, val);
 
@@ -331,10 +336,11 @@ static void sys_spi_init(void)
 	addr = 0x02001000 + 0x0944;
 	val = read32(addr);
 	val &= ~(0xf << 0);
+	// bits 3..0 - FACTOR_M, 0101 - FACTOR_M = 6
 	val |= (6 - 1) << 0;
 	write32(addr, val);
 
-        /* 0x04026000 - SPI_DBI base address */
+    /* 0x04026000 - SPI_DBI base address */
 	/* Set SPI1 clock rate control register, divided by 2 */
 	addr = 0x04026000;
 	write32(addr + SPI_CCR, 0x1000);
@@ -342,15 +348,23 @@ static void sys_spi_init(void)
 	/* Enable SPI1 and do a soft reset */
 	addr = 0x04026000;
 	val = read32(addr + SPI_GCR);
+	// bit 31 - SRST (software reset SPI controller)
+	// bit 7  - TP_EN, 1 - stop transmit data when RXFIFO full
+	// bit 1  - MODE, 0 - slave, 1 - master
+	// bit 0  - EN, 1 - enable spi module control
 	val |= (1 << 31) | (1 << 7) | (1 << 1) | (1 << 0);
 	write32(addr + SPI_GCR, val);
 	while(read32(addr + SPI_GCR) & (1 << 31));
 
+    // bit 6 - SS owner, 1 - software
+	// bit 2 - SPOL, CS active low (1 - idle)
 	val = read32(addr + SPI_TCR);
 	val &= ~(0x3 << 0);
 	val |= (1 << 6) | (1 << 2);
 	write32(addr + SPI_TCR, val);
 
+    // bit 31 - TF_FIFO_RST, 1 - reset TXFIFO
+	// bit 15 - RF_RST, 1 - reset RXFIFO
 	val = read32(addr + SPI_FCR);
 	val |= (1 << 31) | (1 << 15);
 	write32(addr + SPI_FCR, val);
@@ -378,7 +392,7 @@ static void sys_spi_select(void)
 	// bits 5,4 - 00 spi0, 01 spi1, 10 spi2, 11 spi3
 	// bit 6 - SS owner, 0 - spi controller, 1 - software
 	// bit 7 - software SS level, 0 - SS low, 1 - SS high
-	val |= ((0 & 0x3) << 4) | (0x0 << 7);
+	val |= ((1 & 0x3) << 4) | (0x0 << 7);
 	write32(addr + SPI_TCR, val);
 }
 #endif
@@ -401,7 +415,10 @@ static void sys_spi_deselect(void)
 
 	val = read32(addr + SPI_TCR);
 	val &= ~((0x3 << 4) | (0x1 << 7));
-	val |= ((0 & 0x3) << 4) | (0x1 << 7);
+	// bits 5,4 - 00 spi0, 01 spi1, 10 spi2, 11 spi3
+	// bit 6 - SS owner, 0 - spi controller, 1 - software
+	// bit 7 - software SS level, 0 - SS low, 1 - SS high
+	val |= ((1 & 0x3) << 4) | (0x1 << 7);
 	write32(addr + SPI_TCR, val);
 }
 #endif
@@ -430,7 +447,9 @@ static inline void sys_spi_write_txbuf(u8_t* buf, int len)
 	virtual_addr_t addr = 0x04026000;
 	int i;
 
+    // bits 23..0 - MWTC, master write transmit counter
 	write32(addr + SPI_MTC, len & 0xffffff);
+	// bits 23..0 - STC, master single mode transmit counter
 	write32(addr + SPI_BCC, len & 0xffffff);
 	if(buf)
 	{
@@ -501,15 +520,15 @@ static void sys_spi_transfer(void* txbuf, void* rxbuf, u32_t len)
 #endif
 
 enum {
-	SPI_CMD_END		= 0x00,
-	SPI_CMD_INIT		= 0x01,
-	SPI_CMD_SELECT		= 0x02,
-	SPI_CMD_DESELECT	= 0x03,
-	SPI_CMD_FAST		= 0x04,
-	SPI_CMD_TXBUF		= 0x05,
-	SPI_CMD_RXBUF		= 0x06,
-	SPI_CMD_SPINOR_WAIT	= 0x07,
-	SPI_CMD_SPINAND_WAIT	= 0x08,
+	SPI_CMD_END	         = 0x00,
+	SPI_CMD_INIT         = 0x01,
+	SPI_CMD_SELECT       = 0x02,
+	SPI_CMD_DESELECT     = 0x03,
+	SPI_CMD_FAST         = 0x04,
+	SPI_CMD_TXBUF        = 0x05,
+	SPI_CMD_RXBUF        = 0x06,
+	SPI_CMD_SPINOR_WAIT  = 0x07,
+	SPI_CMD_SPINAND_WAIT = 0x08,
 };
 
 void sys_spi_run(void* cbuf)
@@ -576,4 +595,22 @@ void sys_spi_run(void* cbuf)
 			return;
 		}
 	}
+}
+
+void sys_spi_test(void)
+{
+    uint32_t clen = 0;
+    uint8_t cbuf[256];
+
+    cbuf[clen++] = 0x01;
+    cbuf[clen++] = 0x33;
+    cbuf[clen++] = 0x02;
+    cbuf[clen++] = 0x5b;
+
+    sys_spi_init();
+    sys_spi_select();
+    sys_spi_transfer(&cbuf[0], NULL, 4);
+    sys_spi_deselect();
+
+    return;
 }
