@@ -43,7 +43,9 @@ enum {
 	SPI_TXD	= 0x200,
 	SPI_RXD	= 0x300,
 };
-#if 0
+
+#define ORIGINAL_CODE 1
+#if ORIGINAL_CODE
 static void sys_spi_init(void)
 {
 	virtual_addr_t addr;
@@ -130,7 +132,7 @@ static void sys_spi_init(void)
 	val |= (1 << 31) | (1 << 15);
 	write32(addr + SPI_FCR, val);
 }
-#endif
+#else
 static void sys_spi_init(void)
 {
 	virtual_addr_t addr;
@@ -353,7 +355,8 @@ static void sys_spi_init(void)
 	val |= (1 << 31) | (1 << 15);
 	write32(addr + SPI_FCR, val);
 }
-#if 0
+#endif
+#if ORIGINAL_CODE
 static void sys_spi_select(void)
 {
 	virtual_addr_t addr = 0x04025000;
@@ -364,7 +367,7 @@ static void sys_spi_select(void)
 	val |= ((0 & 0x3) << 4) | (0x0 << 7);
 	write32(addr + SPI_TCR, val);
 }
-#endif
+#else
 static void sys_spi_select(void)
 {
 	virtual_addr_t addr = 0x04026000;
@@ -372,10 +375,14 @@ static void sys_spi_select(void)
 
 	val = read32(addr + SPI_TCR);
 	val &= ~((0x3 << 4) | (0x1 << 7));
+	// bits 5,4 - 00 spi0, 01 spi1, 10 spi2, 11 spi3
+	// bit 6 - SS owner, 0 - spi controller, 1 - software
+	// bit 7 - software SS level, 0 - SS low, 1 - SS high
 	val |= ((0 & 0x3) << 4) | (0x0 << 7);
 	write32(addr + SPI_TCR, val);
 }
-#if 0
+#endif
+#if ORGINAL_CODE
 static void sys_spi_deselect(void)
 {
 	virtual_addr_t addr = 0x04025000;
@@ -386,7 +393,7 @@ static void sys_spi_deselect(void)
 	val |= ((0 & 0x3) << 4) | (0x1 << 7);
 	write32(addr + SPI_TCR, val);
 }
-#endif
+#else
 static void sys_spi_deselect(void)
 {
 	virtual_addr_t addr = 0x04026000;
@@ -397,7 +404,8 @@ static void sys_spi_deselect(void)
 	val |= ((0 & 0x3) << 4) | (0x1 << 7);
 	write32(addr + SPI_TCR, val);
 }
-#if 0
+#endif
+#if ORIGINAL_CODE
 static inline void sys_spi_write_txbuf(u8_t * buf, int len)
 {
 	virtual_addr_t addr = 0x04025000;
@@ -416,7 +424,7 @@ static inline void sys_spi_write_txbuf(u8_t * buf, int len)
 			write8(addr + SPI_TXD, 0xff);
 	}
 }
-#endif
+#else
 static inline void sys_spi_write_txbuf(u8_t* buf, int len)
 {
 	virtual_addr_t addr = 0x04026000;
@@ -435,7 +443,8 @@ static inline void sys_spi_write_txbuf(u8_t* buf, int len)
 			write8(addr + SPI_TXD, 0xff);
 	}
 }
-#if 0
+#endif
+#if ORIGINAL_CODE
 static void sys_spi_transfer(void * txbuf, void * rxbuf, u32_t len)
 {
 	virtual_addr_t addr = 0x04025000;
@@ -462,7 +471,7 @@ static void sys_spi_transfer(void * txbuf, void * rxbuf, u32_t len)
 		len -= n;
 	}
 }
-#endif
+#else
 static void sys_spi_transfer(void* txbuf, void* rxbuf, u32_t len)
 {
 	virtual_addr_t addr = 0x04026000;
@@ -489,6 +498,7 @@ static void sys_spi_transfer(void* txbuf, void* rxbuf, u32_t len)
 		len -= n;
 	}
 }
+#endif
 
 enum {
 	SPI_CMD_END		= 0x00,

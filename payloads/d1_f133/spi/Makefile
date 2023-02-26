@@ -2,7 +2,7 @@
 # Top makefile
 #
 
-CROSS		?= ~/test/tina-d1-open/prebuilt/gcc/linux-x86/riscv/toolchain-thead-glibc/riscv64-glibc-gcc-thead_20200702/bin/riscv64-unknown-linux-gnu-
+CROSS		?= /home/nemo/dev/Tina-Linux/prebuilt/gcc/linux-x86/riscv/toolchain-thead-glibc/riscv64-glibc-gcc-thead_20200702/bin/riscv64-unknown-linux-gnu-
 NAME		:= spi
 
 #

@@ -3,6 +3,7 @@
 #include <ecdsa256.h>
 #include <spinor.h>
 #include <spinand.h>
+#include <spitest.h>
 #include <libusb.h>
 
 static uint64_t file_save(const char * filename, void * buf, uint64_t len)
@@ -391,6 +392,18 @@ int main(int argc, char * argv[])
 		}
 		else
 			usage();
+	}
+	else if(!strcmp(argv[1], "spitest"))
+	{
+		argc -= 2;
+		argv += 2;
+		if(argc == 0)
+		{
+			if(spi_test(&ctx))
+				printf("spi test success\n");
+			else
+				printf("spi test failed\n");
+		}
 	}
 	else if(!strcmp(argv[1], "spinor"))
 	{
